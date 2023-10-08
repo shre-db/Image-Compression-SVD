@@ -1,12 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-plt.style.use('dark_background')
 from PIL import Image
 import streamlit as st
-st.set_page_config(layout='wide')
+st.set_page_config(layout='wide', page_title="ImageSVD", page_icon="icons/angle-down-solid.svg")
 import time
 
-st.markdown("<h1 style='text-align: center;'>Introducing ImageSVD</h1>", unsafe_allow_html=True)
+st.markdown('<h1 style="text-align: center;"><i class="fa-solid fa-angle-down"></i> &nbspImageSVD </h1>', unsafe_allow_html=True)
 st.markdown("<h4 style='text-align: center;'><i>Your Image Compression Solution</i></h2>", unsafe_allow_html=True)
 st.markdown('')
 st.markdown("""
@@ -82,16 +81,16 @@ if image is not None:
 
     st.markdown('***')
     st.markdown('')
-    if st.button("**Download Compressed Image**"):
-        compressed_image.save("images/Compressed_Image.jpg", "JPEG")
 
-    # if st.download_button(
-    #     "**Download Compressed Image**",
-    #     data=compressed_image,
-    #     file_name="Compressed-Image.jpg",
-    #     mime="JPG/JPEG",
-    # ):
-    #     pass
+    compressed_image.save("images/Compressed_Image.jpg", "JPEG")
+    with open("images/Compressed_Image.jpg", "rb") as file:
+        btn = st.download_button(
+            label="**Download Compressed Image**",
+            data=file,
+            file_name="Compressed_Image.jpg",
+            mime="image/jpg"
+        )
+
     st.markdown('')
     if st.toggle("**Advanced Info**"):
         st.markdown('')
@@ -137,7 +136,7 @@ if image is not None:
         ax[0].set_ylabel('Cumulative Sum')
         ax[0].vlines(x=rank, ymin=0, ymax=np.cumsum(S_red/np.sum(S_red))[rank], color='magenta', linestyle='--')
         ax[0].hlines(y=np.cumsum(S_red/np.sum(S_red))[rank], xmin=0.0, xmax=rank, color='magenta', linestyle='--')
-        ax[0].plot(rank, np.cumsum(S_red/np.sum(S_red))[rank], 'wo')
+        ax[0].plot(rank, np.cumsum(S_red/np.sum(S_red))[rank], 'mo')
         ax[0].text(
             x=rank + 10,
             y=np.cumsum(S_red/np.sum(S_red))[rank] - 0.05,
@@ -151,7 +150,7 @@ if image is not None:
         ax[1].set_ylabel('Cumulative Sum')
         ax[1].vlines(x=rank, ymin=0, ymax=np.cumsum(S_green/np.sum(S_green))[rank], color='magenta', linestyle='--')
         ax[1].hlines(y=np.cumsum(S_green/np.sum(S_green))[rank], xmin=0.0, xmax=rank, color='magenta', linestyle='--')
-        ax[1].plot(rank, np.cumsum(S_green/np.sum(S_green))[rank], 'wo')
+        ax[1].plot(rank, np.cumsum(S_green/np.sum(S_green))[rank], 'mo')
         ax[1].text(
             x=rank + 10,
             y=np.cumsum(S_green/np.sum(S_green))[rank] - 0.05,
@@ -165,7 +164,7 @@ if image is not None:
         ax[2].set_ylabel('Cumulative Sum')
         ax[2].vlines(x=rank, ymin=0, ymax=np.cumsum(S_blue/np.sum(S_blue))[rank], color='magenta', linestyle='--')
         ax[2].hlines(y=np.cumsum(S_blue/np.sum(S_blue))[rank], xmin=0.0, xmax=rank, color='magenta', linestyle='--')
-        ax[2].plot(rank, np.cumsum(S_blue/np.sum(S_blue))[rank], 'wo')
+        ax[2].plot(rank, np.cumsum(S_blue/np.sum(S_blue))[rank], 'mo')
         ax[2].text(
             x=rank + 10,
             y=np.cumsum(S_blue/np.sum(S_blue))[rank] - 0.05,
@@ -181,10 +180,9 @@ st.markdown('')
 st.markdown('')
 st.markdown('')
 st.markdown('***')
-# st.write("© 2023 Shreyas. All Rights Reserved.")
-# st.write("Contact us at shreyasdb99@gmail.com")
-st.markdown(
-"""
+
+
+css_copyr = '''
 <style>
 .footer-text {
     font-size: 15px;
@@ -192,13 +190,15 @@ st.markdown(
     text-align: center;
 }
 </style>
-""",
-unsafe_allow_html=True,
-)
+'''
 
-st.markdown("<p class='footer-text'>© 2023 Shreyas. All Rights Reserved.</p>", unsafe_allow_html=True)
+st.markdown(css_copyr, unsafe_allow_html=True)
+
+st.markdown('<p class="footer-text">Copyright © 2023 &nbsp<i class="fa-solid fa-angle-down"></i>&nbspImageSVD</p>', unsafe_allow_html=True)
 st.markdown("<p class='footer-text'>Contact us at shreyasdb99@gmail.com</p>", unsafe_allow_html=True)
 st.markdown('')
+
+
 css_fa = '''                                                                                                                                                     
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
@@ -217,7 +217,7 @@ css_fa = '''
     <a href="https://github.com/shre-db" target="_blank"><i class="fa-brands fa-github footer-fa"></i></a>                                                                                                                                                                
     <a href="https://www.linkedin.com/in/shreyas-bangera-aa8012271/" target="_blank"><i class="fa-brands fa-linkedin footer-fa"></i></a>                                                                                                                                                                         
     <a href="https://www.instagram.com/shryzium/" target="_blank"><i class="fa-brands fa-instagram footer-fa"></i></a>
-</div>
+</div><br>
 '''
 
 st.markdown(css_fa, unsafe_allow_html=True)
