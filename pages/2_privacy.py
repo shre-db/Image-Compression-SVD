@@ -20,8 +20,7 @@ st.markdown("""
     **Data Retention**
 
     We respect your privacy and are committed to retaining your image data only for the necessary duration required
-    to complete the requested tasks. Your image data will be retained on our servers for a limited period, typically
-    1 hour, after which it will be automatically and securely deleted from our systems.
+    to complete the requested tasks. Your image data will be automatically and securely deleted from our systems when you exit the session.
 
     **Data Security**
 
