@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_page_config(layout='centered', page_title="ImageSVD - Privacy", page_icon="icons/angle-down-solid.svg")
+st.set_page_config(layout='centered', page_title="ImageSVD - Privacy", page_icon="icons/angle-down-solid.svg", initial_sidebar_state='collapsed')
 
 
 st.title("Privacy Notice")
