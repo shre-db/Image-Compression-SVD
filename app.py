@@ -4,6 +4,7 @@ from PIL import Image
 import streamlit as st
 st.set_page_config(layout='wide', page_title="ImageSVD", page_icon="icons/angle-down-solid.svg", initial_sidebar_state='collapsed')
 import time
+from processor import Decompose
 
 st.markdown('<h1 style="text-align: center;"><i class="fa-solid fa-angle-down"></i> &nbspImageSVD </h1>', unsafe_allow_html=True)
 st.markdown("<h4 style='text-align: center;'><i>Your Image Compression Solution</i></h2>", unsafe_allow_html=True)
@@ -26,59 +27,48 @@ Discover the perfect balance between image quality and file size with ImageSVD. 
             """)
 st.markdown('')
 st.markdown('')
-image = st.file_uploader("**SELECT AN IMAGE**", type=['jpg'])
-st.markdown('')
+image = st.file_uploader("**SELECT AN IMAGE**", type=['jpg'], help="Images > 1MB require considerable time for compression with our current resources. Please hang tight!")
 st.markdown('')
 st.markdown('')
 
 if image is not None:
     pil_img = Image.open(image)
     img = np.array(pil_img)
+    
+    decomposer = Decompose(img=img)
 
-    # Split the image into its RBG channels
-    red_channel = img[:, :, 0]
-    green_channel = img[:, :, 1]
-    blue_channel = img[:, :, 2]
+    if decomposer.dimensions == 2:
+        U, S, Vt = decomposer.svd_grayscale_img(img)
 
-    # Singular Value Decomposition for each channel seperately
-    U_red, S_red, Vt_red = np.linalg.svd(red_channel, full_matrices=False)
-    U_green, S_green, Vt_green = np.linalg.svd(green_channel, full_matrices=False)
-    U_blue, S_blue, Vt_blue = np.linalg.svd(blue_channel, full_matrices=False)
+        compressed_image = decomposer.low_rank_approx(U=U, S=S, Vt=Vt).astype(np.uint8)
 
-    max_S_red, max_S_green, max_S_blue = S_red.size, S_green.size, S_blue.size
-    num_S = min(max_S_red, max_S_green, max_S_blue)
-    rank = st.slider("**SLIDE TO ADJUST THE RANK**", min_value=0, max_value=num_S, help="Higher the rank, closer the compressed image is to the original image.")
+        compressed_image = Image.fromarray(compressed_image)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(pil_img, caption="Original image", use_column_width=True)
+        with col2:
+            st.image(compressed_image, caption="Compressed Image", use_column_width=True)
 
+    elif decomposer.dimensions == 3:
+        r, g, b = decomposer.svd_color_img(img)
 
-    def low_rank_approx(rank, U, S, Vt):
-        """
-        A function to compute a lower rank approximation of the image.
+        compressed_red = decomposer.low_rank_approx(U=r[0], S=r[1], Vt=r[2])
+        compressed_green = decomposer.low_rank_approx(U=g[0], S=g[1], Vt=g[2])
+        compressed_blue = decomposer.low_rank_approx(U=b[0], S=b[1], Vt=b[2])
 
-        Parameters:
-        -----------
-        - rank (int): Higher the value of rank, the closer the approximated image is to the original imag
-        - U (m x m array): Left Singular Vectors which are the columns of matrix U.
-        - S (m x n array): Is a diagonal matrix containing the singular values of A.
-        - Vt (n x n array): Right Singular Vectors which are the rows of the matrix Vt.
-        """
-        S = np.diag(S)
-        X_approx = U[:, :rank] @ S[:rank, :rank] @ Vt[:rank, :]
-        return X_approx
+        compressed_image = np.clip(np.stack((compressed_red, compressed_green, compressed_blue), axis=-1), 0, 255).astype(np.uint8)
+
+        compressed_image = Image.fromarray(compressed_image)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(pil_img, caption="Original image", use_column_width=True)
+        with col2:
+            st.image(compressed_image, caption="Compressed Image", use_column_width=True)
+    
+    else:
+        st.warning("Image not compatible with our system!", icon='⚠')
 
     
-    compressed_red = low_rank_approx(rank, U_red, S_red, Vt_red)
-    compressed_green = low_rank_approx(rank, U_green, S_green, Vt_green)
-    compressed_blue = low_rank_approx(rank, U_blue, S_blue, Vt_blue)
-
-    compressed_image = np.clip(np.stack((compressed_red, compressed_green, compressed_blue), axis=-1), 0, 255).astype(np.uint8)
-
-    compressed_image = Image.fromarray(compressed_image)
-    col1, col2 = st.columns(2)
-    with col1:
-        st.image(pil_img, caption="Original image", use_column_width=True)
-    with col2:
-        st.image(compressed_image, caption="Compressed Image", use_column_width=True)
-
     st.markdown('***')
     st.markdown('')
 
@@ -93,94 +83,140 @@ if image is not None:
 
     st.markdown('')
     if st.toggle("**Advanced Info**"):
-        st.markdown('')
-        st.markdown('')
-        st.markdown('### Singular Value Analysis')
-        st.markdown('')
-        with st.spinner("Plotting..."):
-            time.sleep(2)
-        fig1, ax = plt.subplots(1, 3, figsize=(18, 6))
+        if decomposer.dimensions == 2:
+            st.markdown('')
+            st.markdown('')
+            st.markdown('### Singular Value Analysis')
+            st.markdown('')
+            with st.spinner("Plotting..."):
+                time.sleep(2)
+            fig1, ax = plt.subplots(1, 1, figsize=(12, 4))
 
-        ax[0].semilogy(S_red, color='red')
-        ax[0].set_title("Singular Values: Red Channel")
-        ax[0].set_xlabel('$j$')
-        ax[0].set_ylabel('$log\sigma_j$')
-        ax[0].grid(alpha=0.2)
+            ax.semilogy(S, color='orange')
+            ax.set_title("Singular Values")
+            ax.set_xlabel('$j$')
+            ax.set_ylabel('$log\sigma_j$')
+            ax.grid(alpha=0.2)
 
-        ax[1].semilogy(S_green, color='green')
-        ax[1].set_title("Singular Values: Green Channel")
-        ax[1].set_xlabel('$j$')
-        ax[1].set_ylabel('$log\sigma_j$')
-        ax[1].grid(alpha=0.2)
+            st.pyplot(fig=fig1)
+            
+            st.markdown('')
+            st.markdown("***Singular Values $\sigma_j$ in logarithmic scale vs. index of the singular values $j$***")
+            st.markdown("The above plots are displayed using a logarithmic scale on the y-axis (`semilogy()` function), which is useful for visualizing a wide range of values. Singular values represent the importance or weight of each singular vector in the decomposition. Singular values are typically ordered in descending order, so the first few singular values capture most of the data's variance, and the rest contribute less. This type of plot helps you see the relative differences between singular values more clearly, especially when there are significant variations in magnitude.")
+            st.markdown('')
+            st.markdown('***')
 
-        ax[2].semilogy(S_blue, color='blue')
-        ax[2].set_title("Singular Values: Blue Channel")
-        ax[2].set_xlabel('$j$')
-        ax[2].set_ylabel('$log\sigma_j$')
-        ax[2].grid(alpha=0.2)
+            fig2, ax = plt.subplots(1, 1, figsize=(12, 4))
+
+            ax.plot(np.cumsum(S/np.sum(S)), color='orange')
+            ax.set_title('Singular Values: Cumulative Sum')
+            ax.set_xlabel('$j$')
+            ax.set_ylabel('Cumulative Sum')
+            ax.vlines(x=decomposer.rank, ymin=0, ymax=np.cumsum(S/np.sum(S))[decomposer.rank], color='magenta', linestyle='--')
+            ax.hlines(y=np.cumsum(S/np.sum(S))[decomposer.rank], xmin=0.0, xmax=decomposer.rank, color='magenta', linestyle='--')
+            ax.plot(decomposer.rank, np.cumsum(S/np.sum(S))[decomposer.rank], 'mo')
+            ax.text(
+                x=decomposer.rank + 10,
+                y=np.cumsum(S/np.sum(S))[decomposer.rank] - 0.05,
+                s=f"{round(np.cumsum(S/np.sum(S))[decomposer.rank]*100, 1)} %"
+            )
+            plt.grid(alpha=0.2)
+
+            st.pyplot(fig=fig2)
+
+            st.markdown('')
+            st.markdown("***Cumulative Sum (of squared Singular values per total sum of squared Singular Values) vs. index of the singular values $j$***")
+            st.markdown("This plot helps you understand the contribution of each singular value to the total variance or energy of the matrix. The cumulative sum curve shows how much of the total variance is captured by including the first $j$ singular values. If you were to draw a horizontal line at a certain value on the y-axis, the corresponding x-axis value would tell you how many singular values you need to include to capture that percentage of the total variance and vice versa.")
 
 
-        st.pyplot(fig=fig1)
+        elif decomposer.dimensions == 3:
+            st.markdown('')
+            st.markdown('')
+            st.markdown('### Singular Value Analysis')
+            st.markdown('')
+            with st.spinner("Plotting..."):
+                time.sleep(2)
+            fig1, ax = plt.subplots(1, 3, figsize=(18, 6))
 
-        st.markdown('')
-        st.markdown("***Singular Values $\sigma_j$ in logarithmic scale vs. index of the singular values $j$***")
-        st.markdown("The above plots are displayed using a logarithmic scale on the y-axis (`semilogy()` function), which is useful for visualizing a wide range of values. Singular values represent the importance or weight of each singular vector in the decomposition. Singular values are typically ordered in descending order, so the first few singular values capture most of the data's variance, and the rest contribute less. This type of plot helps you see the relative differences between singular values more clearly, especially when there are significant variations in magnitude.")
-        st.markdown('')
-        st.markdown('***')
+            ax[0].semilogy(r[1], color='red')
+            ax[0].set_title("Singular Values: Red Channel")
+            ax[0].set_xlabel('$j$')
+            ax[0].set_ylabel('$log\sigma_j$')
+            ax[0].grid(alpha=0.2)
 
-        fig2, ax = plt.subplots(1, 3, figsize=(18, 6))
+            ax[1].semilogy(g[1], color='green')
+            ax[1].set_title("Singular Values: Green Channel")
+            ax[1].set_xlabel('$j$')
+            ax[1].set_ylabel('$log\sigma_j$')
+            ax[1].grid(alpha=0.2)
 
-        ax[0].plot(np.cumsum(S_red/np.sum(S_red)), color='red')
-        ax[0].set_title('Singular Values [Red Channel]: Cumulative Sum')
-        ax[0].set_xlabel('$j$')
-        ax[0].set_ylabel('Cumulative Sum')
-        ax[0].vlines(x=rank, ymin=0, ymax=np.cumsum(S_red/np.sum(S_red))[rank], color='magenta', linestyle='--')
-        ax[0].hlines(y=np.cumsum(S_red/np.sum(S_red))[rank], xmin=0.0, xmax=rank, color='magenta', linestyle='--')
-        ax[0].plot(rank, np.cumsum(S_red/np.sum(S_red))[rank], 'mo')
-        ax[0].text(
-            x=rank + 10,
-            y=np.cumsum(S_red/np.sum(S_red))[rank] - 0.05,
-            s=f"{round(np.cumsum(S_red/np.sum(S_red))[rank]*100, 1)} %"
-        )
-        ax[0].grid(alpha=0.2)
+            ax[2].semilogy(b[1], color='blue')
+            ax[2].set_title("Singular Values: Blue Channel")
+            ax[2].set_xlabel('$j$')
+            ax[2].set_ylabel('$log\sigma_j$')
+            ax[2].grid(alpha=0.2)
 
-        ax[1].plot(np.cumsum(S_green/np.sum(S_green)), color='green')
-        ax[1].set_title('Singular Values [Green Channel]: Cumulative Sum')
-        ax[1].set_xlabel('$j$')
-        ax[1].set_ylabel('Cumulative Sum')
-        ax[1].vlines(x=rank, ymin=0, ymax=np.cumsum(S_green/np.sum(S_green))[rank], color='magenta', linestyle='--')
-        ax[1].hlines(y=np.cumsum(S_green/np.sum(S_green))[rank], xmin=0.0, xmax=rank, color='magenta', linestyle='--')
-        ax[1].plot(rank, np.cumsum(S_green/np.sum(S_green))[rank], 'mo')
-        ax[1].text(
-            x=rank + 10,
-            y=np.cumsum(S_green/np.sum(S_green))[rank] - 0.05,
-            s=f"{round(np.cumsum(S_green/np.sum(S_green))[rank]*100, 1)} %"
-        )
-        ax[1].grid(alpha=0.2)
+            st.pyplot(fig=fig1)
 
-        ax[2].plot(np.cumsum(S_blue/np.sum(S_blue)), color='blue')
-        ax[2].set_title('Singular Values [Blue Channel]: Cumulative Sum')
-        ax[2].set_xlabel('$j$')
-        ax[2].set_ylabel('Cumulative Sum')
-        ax[2].vlines(x=rank, ymin=0, ymax=np.cumsum(S_blue/np.sum(S_blue))[rank], color='magenta', linestyle='--')
-        ax[2].hlines(y=np.cumsum(S_blue/np.sum(S_blue))[rank], xmin=0.0, xmax=rank, color='magenta', linestyle='--')
-        ax[2].plot(rank, np.cumsum(S_blue/np.sum(S_blue))[rank], 'mo')
-        ax[2].text(
-            x=rank + 10,
-            y=np.cumsum(S_blue/np.sum(S_blue))[rank] - 0.05,
-            s=f"{round(np.cumsum(S_blue/np.sum(S_blue))[rank]*100, 1)} %"
-        )
-        ax[2].grid(alpha=0.2)
-        st.pyplot(fig=fig2)
+            st.markdown('')
+            st.markdown("***Singular Values $\sigma_j$ in logarithmic scale vs. index of the singular values $j$***")
+            st.markdown("The above plots are displayed using a logarithmic scale on the y-axis (`semilogy()` function), which is useful for visualizing a wide range of values. Singular values represent the importance or weight of each singular vector in the decomposition. Singular values are typically ordered in descending order, so the first few singular values capture most of the data's variance, and the rest contribute less. This type of plot helps you see the relative differences between singular values more clearly, especially when there are significant variations in magnitude.")
+            st.markdown('')
+            st.markdown('***')
 
-        st.markdown('')
-        st.markdown("***Cumulative Sum (of squared Singular values per total sum of squared Singular Values) vs. index of the singular values $j$***")
-        st.markdown("This plot helps you understand the contribution of each singular value to the total variance or energy of the matrix. The cumulative sum curve shows how much of the total variance is captured by including the first $j$ singular values. If you were to draw a horizontal line at a certain value on the y-axis, the corresponding x-axis value would tell you how many singular values you need to include to capture that percentage of the total variance and vice versa.")
+            fig2, ax = plt.subplots(1, 3, figsize=(18, 6))
+
+            ax[0].plot(np.cumsum(r[1]/np.sum(r[1])), color='red')
+            ax[0].set_title('Singular Values [Red Channel]: Cumulative Sum')
+            ax[0].set_xlabel('$j$')
+            ax[0].set_ylabel('Cumulative Sum')
+            ax[0].vlines(x=decomposer.rank, ymin=0, ymax=np.cumsum(r[1]/np.sum(r[1]))[decomposer.rank], color='magenta', linestyle='--')
+            ax[0].hlines(y=np.cumsum(r[1]/np.sum(r[1]))[decomposer.rank], xmin=0.0, xmax=decomposer.rank, color='magenta', linestyle='--')
+            ax[0].plot(decomposer.rank, np.cumsum(r[1]/np.sum(r[1]))[decomposer.rank], 'mo')
+            ax[0].text(
+                x=decomposer.rank + 10,
+                y=np.cumsum(r[1]/np.sum(r[1]))[decomposer.rank] - 0.05,
+                s=f"{round(np.cumsum(r[1]/np.sum(r[1]))[decomposer.rank]*100, 1)} %"
+            )
+            ax[0].grid(alpha=0.2)
+
+            ax[1].plot(np.cumsum(g[1]/np.sum(g[1])), color='green')
+            ax[1].set_title('Singular Values [Green Channel]: Cumulative Sum')
+            ax[1].set_xlabel('$j$')
+            ax[1].set_ylabel('Cumulative Sum')
+            ax[1].vlines(x=decomposer.rank, ymin=0, ymax=np.cumsum(g[1]/np.sum(g[1]))[decomposer.rank], color='magenta', linestyle='--')
+            ax[1].hlines(y=np.cumsum(g[1]/np.sum(g[1]))[decomposer.rank], xmin=0.0, xmax=decomposer.rank, color='magenta', linestyle='--')
+            ax[1].plot(decomposer.rank, np.cumsum(g[1]/np.sum(g[1]))[decomposer.rank], 'mo')
+            ax[1].text(
+                x=decomposer.rank + 10,
+                y=np.cumsum(g[1]/np.sum(g[1]))[decomposer.rank] - 0.05,
+                s=f"{round(np.cumsum(g[1]/np.sum(g[1]))[decomposer.rank]*100, 1)} %"
+            )
+            ax[1].grid(alpha=0.2)
+
+            ax[2].plot(np.cumsum(b[1]/np.sum(b[1])), color='blue')
+            ax[2].set_title('Singular Values [Blue Channel]: Cumulative Sum')
+            ax[2].set_xlabel('$j$')
+            ax[2].set_ylabel('Cumulative Sum')
+            ax[2].vlines(x=decomposer.rank, ymin=0, ymax=np.cumsum(b[1]/np.sum(b[1]))[decomposer.rank], color='magenta', linestyle='--')
+            ax[2].hlines(y=np.cumsum(b[1]/np.sum(b[1]))[decomposer.rank], xmin=0.0, xmax=decomposer.rank, color='magenta', linestyle='--')
+            ax[2].plot(decomposer.rank, np.cumsum(b[1]/np.sum(b[1]))[decomposer.rank], 'mo')
+            ax[2].text(
+                x=decomposer.rank + 10,
+                y=np.cumsum(b[1]/np.sum(b[1]))[decomposer.rank] - 0.05,
+                s=f"{round(np.cumsum(b[1]/np.sum(b[1]))[decomposer.rank]*100, 1)} %"
+            )
+            ax[2].grid(alpha=0.2)
+            st.pyplot(fig=fig2)
+
+            st.markdown('')
+            st.markdown("***Cumulative Sum (of squared Singular values per total sum of squared Singular Values) vs. index of the singular values $j$***")
+            st.markdown("This plot helps you understand the contribution of each singular value to the total variance or energy of the matrix. The cumulative sum curve shows how much of the total variance is captured by including the first $j$ singular values. If you were to draw a horizontal line at a certain value on the y-axis, the corresponding x-axis value would tell you how many singular values you need to include to capture that percentage of the total variance and vice versa.")
+
 st.markdown('')
 st.markdown('')
 st.markdown('')
 st.markdown('***')
-
 
 css_copyr = '''
 <style>
