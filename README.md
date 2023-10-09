@@ -1,4 +1,4 @@
-
+![Cover-Image](icons/ImageSVD.png)
 
 ## Introduction
 
@@ -24,11 +24,11 @@ The heart of ImageSVD is the quest to find the optimal rank. By experimenting wi
 
 ImageSVD doesn't stop at compression; it's about visualizing the transformation. We provide users with insights into the compression process:
 
-## Visualizing Singular Values
+### Visualizing Singular Values
 
 Our platform generates a logarithmic scale graph of singular values $\sigma_j$ vs. the index of singular values $j$. This graph offers a compelling visual representation of the relative importance of each singular value, allowing users to grasp how the compression process affects the image's information content.
 
-## Understanding Variance and Energy
+### Understanding Variance and Energy
 
 Another graph showcases the cumulative sum vs. the index of singular values $j$. This visualization illuminates the contribution of each singular value to the total variance or energy of the image. Users can gauge how much of the image's essence is retained by including specific singular values in the compression process.
 
@@ -44,7 +44,7 @@ Beyond the technical intricacies, ImageSVD has real-world applications. As data 
 
 We invite you to experience ImageSVD firsthand through our web service, hosted on the Streamlit Community Cloud. Click the button below to access this innovative image compression tool:
 
-<a href="https://imagesvd.streamlit.app" target="_parent"><img src="icons/ImageSVD-Logo-Rounded.png" height=40 alt="Launch ImageSVD"/></a>
+<a href="https://imagesvd.streamlit.app" target="_blank"><img src="icons/ImageSVD-Logo-Rounded.png" height=40 alt="Launch ImageSVD"/></a>
 
 ImageSVD represents the synergy of data science, mathematics, and real-world problem-solving. Join us on this journey to make image compression smarter, more accessible, and more efficient.
 
