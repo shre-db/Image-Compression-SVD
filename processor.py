@@ -22,7 +22,7 @@ class Decompose:
         num_S = min(max_S_red, max_S_green, max_S_blue)
         self.rank = st.slider(
             "**SLIDE TO ADJUST THE RANK**",
-            min_value=0, max_value=num_S,
+            min_value=0, max_value=num_S - 1,
             help="Higher the rank, closer the compressed image is to the original image.")    
         return ((U_red, S_red, Vt_red), (U_green, S_green, Vt_green), (U_blue, S_blue, Vt_blue))
     
@@ -32,7 +32,7 @@ class Decompose:
         num_S = S.size
         self.rank = st.slider(
             "**SLIDE TO ADJUST THE RANK**",
-            min_value=0, max_value=num_S,
+            min_value=0, max_value=num_S - 1,
             help="Higher the rank, closer the compressed image is to the original image.")
         return U, S, Vt
 
