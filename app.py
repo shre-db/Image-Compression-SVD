@@ -254,6 +254,9 @@ css_fa = '''
     <a href="https://www.linkedin.com/in/shreyas-bangera-aa8012271/" target="_blank"><i class="fa-brands fa-linkedin footer-fa"></i></a>                                                                                                                                                                         
     <a href="https://www.instagram.com/shryzium/" target="_blank"><i class="fa-brands fa-instagram footer-fa"></i></a>
 </div><br>
+<div>
+    <p class="footer-text">Version 1.0.0</p>
+</div>
 '''
 
 st.markdown(css_fa, unsafe_allow_html=True)
